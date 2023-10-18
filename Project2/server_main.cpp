@@ -179,7 +179,7 @@ void recv_msg(int idx) {
             msg = sck_list[idx].user + " : " + buf;
             cout << msg << endl;
             send_msg(msg.c_str());
-            pstmt = con->prepareStatement("INSERT INTO chatting(chatname, time, recv) VALUE(?, NOW(),  ?)");
+            pstmt = con->prepareStatement("INSERT INTO chatting(chatname, time, message) VALUE(?, NOW(),  ?)");
             pstmt->setString(1, sck_list[idx].user);
             pstmt->setString(2, buf);
             pstmt->execute();

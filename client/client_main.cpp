@@ -162,6 +162,7 @@ int chat_recv() {
 
     while (1) {
         ZeroMemory(&buf, MAX_SIZE);
+
         if (recv(client_sock, buf, MAX_SIZE, 0) > 0) {
             msg = buf;
             std::stringstream ss(msg);  // 문자열을 스트림화
@@ -626,6 +627,7 @@ int main() {
                 }
             }
         }
+
         else if (mainIn == 3) {
             chattinginfo();
             sql.chattinginfo();
@@ -650,8 +652,7 @@ int main() {
                     }
                     cout << "Connecting..." << endl;
                 }
-
-
+                
                 std::thread th2(chat_recv);
 
                 while (1) {
@@ -660,11 +661,13 @@ int main() {
                     const char* buffer = text.c_str(); // string형을 char* 타입으로 변환
                     send(client_sock, buffer, strlen(buffer), 0);
                 }
+                
                 th2.join();
                 closesocket(client_sock);
                 WSACleanup();
             }
         }
+
         else if (mainIn == 0) {
             cout << "프로그램을 종료합니다." << endl;
             return 0;
