@@ -48,7 +48,7 @@ void startSql() {
     }
 
     // 데이터베이스 선택                                                                
-    con->setSchema("project1");
+    con->setSchema("project2");
 
     // DB 한글 저장을 위한 셋팅                                                             
     stmt = con->createStatement();
@@ -179,6 +179,10 @@ void recv_msg(int idx) {
             msg = sck_list[idx].user + " : " + buf;
             cout << msg << endl;
             send_msg(msg.c_str());
+            pstmt = con->prepareStatement("INSERT INTO chatting(chatname, time, recv) VALUE(?, NOW(),  ?)");
+            pstmt->setString(1, sck_list[idx].user);
+            pstmt->setString(2, buf);
+            pstmt->execute();
         }
         else { //그렇지 않을 경우 퇴장에 대한 신호로 생각하여 퇴장 메시지 전송
             msg = "[공지] " + sck_list[idx].user + " 님이 퇴장했습니다.";
