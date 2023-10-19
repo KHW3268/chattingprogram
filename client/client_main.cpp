@@ -147,12 +147,22 @@ void chattinginfo() {
     cout << "■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■" << endl;
     cout << "■                                                            ■" << endl;
     cout << "■                       채팅 프로그램                        ■" << endl;
-    cout << "■                          채팅방                            ■" << endl;
+    cout << "■                        채팅방 기능                         ■" << endl;
     cout << "■                                                            ■" << endl;
-    cout << "■                       >> 채팅방 기능 1),,,,                ■" << endl;
-    cout << "■                       0. 종료                              ■" << endl;
+    cout << "■                       1. 채팅 하기                         ■" << endl;
+    cout << "■                       2. 채팅 내역 검색                    ■" << endl;
+    cout << "■                       0. 뒤로가기                          ■" << endl;
     cout << "■                                                            ■" << endl;
     cout << "■                                                            ■" << endl;
+    cout << "■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■" << endl;
+}
+void chattingmain() {
+    system("cls");
+    cout << "■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■" << endl;
+    cout << "■                                                            ■" << endl;
+    cout << "■                        채팅방 입장!!                       ■" << endl;
+    cout << "■                                                            ■" << endl;
+    cout << "■                           /종료                            ■" << endl;
     cout << "■                                                            ■" << endl;
     cout << "■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■" << endl;
 }
@@ -482,7 +492,7 @@ public:
         pw.clear();
         Sleep(500);
     }
-    void chattinginfo()
+    void beforeChat()
     {
         
     }
@@ -495,6 +505,11 @@ public:
             getName = result->getString(1);
         }
         return getName;
+    }
+    void chattingInfo() {
+        pstmt = con->prepareStatement("INSERT INTO chatting(user_id) VALUE(?)");
+        pstmt->setString(1, id);
+        pstmt->execute();
     }
     void friends(){
         pstmt = con->prepareStatement("SELECT name, status, birth, phone FROM user WHERE id != ?;");
@@ -543,6 +558,31 @@ public:
             cout << "-----------------------------------------" << endl;
         }
     }
+    void search_content_message()
+    {
+        string content;
+        cout << ">>내용에 따른 메시지 검색 : ";
+        cin >> content;
+        pstmt = con->prepareStatement("SELECT chatname, time, message FROM chatting\
+                               WHERE message LIKE ?");
+        pstmt->setString(1, "%" + content + "%");
+        result = pstmt->executeQuery();
+
+        if (!result->next()) {
+            cout << "검색 결과가 없습니다." << endl;
+        }
+        else {
+            while (true) {
+                string chatname = result->getString(1);
+                string time = result->getString(2);
+                string message = result->getString(3);
+                cout << "--------------------------------------------------" << endl;
+                cout << "보낸사람 : " << chatname << " 보낸시간 : " << time << endl;
+                cout << "내역 : " << message << endl;
+                if (!result->next()) break;
+            }
+        }
+    }
 };
 
 int main() {
@@ -553,7 +593,6 @@ int main() {
     while (!loginSuccess) {
         startMenu(); //시작 화면
         char startIn = 0;
-        cout << "▶ ";
         cin >> startIn;
         switch (startIn) {
         case '1': //1. 로그인
@@ -630,41 +669,59 @@ int main() {
 
         else if (mainIn == 3) {
             chattinginfo();
-            sql.chattinginfo();
-            WSADATA wsa;
-            int code = WSAStartup(MAKEWORD(2, 2), &wsa);
-            if (!code) {
-                cout << "채팅방 입장." << endl;
-                my_nick = sql.getName();
-                client_sock = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP); // 
+            bool backButton = false;
+            int code = 0;
+            while (!backButton) {
+                char information = 0;
+                cin >> information;
+                switch (information) {
+                case '1':
+                    WSADATA wsa;
+                    code = WSAStartup(MAKEWORD(2, 2), &wsa);
+                    if (!code) {
+                        cout << "채팅방 입장." << endl;
+                        my_nick = sql.getName();
+                        client_sock = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP); // 
 
-                // 연결할 서버 정보 설정 부분
-                SOCKADDR_IN client_addr = {};
-                client_addr.sin_family = AF_INET;
-                client_addr.sin_port = htons(7777);
-                InetPton(AF_INET, TEXT("127.0.0.1"), &client_addr.sin_addr);
+                        // 연결할 서버 정보 설정 부분
+                        SOCKADDR_IN client_addr = {};
+                        client_addr.sin_family = AF_INET;
+                        client_addr.sin_port = htons(7777);
+                        InetPton(AF_INET, TEXT("127.0.0.1"), &client_addr.sin_addr);
 
-                while (1) {
-                    if (!connect(client_sock, (SOCKADDR*)&client_addr, sizeof(client_addr))) { // 위에 설정한 정보에 해당하는 server로 연결!
-                        cout << "Server Connect" << endl;
-                        send(client_sock, my_nick.c_str(), my_nick.length(), 0); // 연결에 성공하면 client 가 입력한 닉네임을 서버로 전송
-                        break;
+                        while (1) {
+                            if (!connect(client_sock, (SOCKADDR*)&client_addr, sizeof(client_addr))) { // 위에 설정한 정보에 해당하는 server로 연결!
+                                cout << "Server Connect" << endl;
+                                send(client_sock, my_nick.c_str(), my_nick.length(), 0); // 연결에 성공하면 client 가 입력한 닉네임을 서버로 전송
+                                break;
+                            }
+                            cout << "Connecting..." << endl;
+                        }
+
+                        std::thread th2(chat_recv);
+
+                        while (1) {
+                            string text;
+                            std::getline(cin, text);
+                            sql.chattingInfo();
+                            const char* buffer = text.c_str(); // string형을 char* 타입으로 변환
+                            send(client_sock, buffer, strlen(buffer), 0);
+                        }
+                        th2.join();
+                        closesocket(client_sock);
                     }
-                    cout << "Connecting..." << endl;
+                    WSACleanup();
+                    break;
+                case'2':
+                    sql.search_content_message();
+                    continue;
+                case'0':
+                    backButton = true;
+                    break;
+                default:
+                    cout << "잘못된 입력입니다. 다시 입력해주세요." << endl;
+                    continue;
                 }
-                
-                std::thread th2(chat_recv);
-
-                while (1) {
-                    string text;
-                    std::getline(cin, text);
-                    const char* buffer = text.c_str(); // string형을 char* 타입으로 변환
-                    send(client_sock, buffer, strlen(buffer), 0);
-                }
-                
-                th2.join();
-                closesocket(client_sock);
-                WSACleanup();
             }
         }
 

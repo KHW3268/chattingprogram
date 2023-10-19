@@ -91,7 +91,6 @@ int main() {
             msg = server_sock.user + " : " + buf;
             send_msg(msg.c_str());
         }
-
         for (int i = 0; i < MAX_CLIENT; i++) {
             th1[i].join();
             //join : 해당하는 thread 들이 실행을 종료하면 리턴하는 함수.
@@ -137,7 +136,6 @@ void add_client() {
     SOCKADDR_IN addr = {};
     int addrsize = sizeof(addr);
     char buf[MAX_SIZE] = { };
-
     ZeroMemory(&addr, addrsize); // addr의 메모리 영역을 0으로 초기화
 
     SOCKET_INFO new_client = {};
@@ -146,7 +144,6 @@ void add_client() {
     recv(new_client.sck, buf, MAX_SIZE, 0);
     // Winsock2의 recv 함수. client가 보낸 닉네임을 받음.
     new_client.user = string(buf);
-
     string msg = "[공지] " + new_client.user + " 님이 입장했습니다.";
     cout << msg << endl;
     sck_list.push_back(new_client); // client 정보를 답는 sck_list 배열에 새로운 client 추가
@@ -179,7 +176,7 @@ void recv_msg(int idx) {
             msg = sck_list[idx].user + " : " + buf;
             cout << msg << endl;
             send_msg(msg.c_str());
-            pstmt = con->prepareStatement("INSERT INTO chatting(chatname, time, message) VALUE(?, NOW(),  ?)");
+            pstmt = con->prepareStatement("INSERT INTO chatting(chatname, time, message) VALUE(?, NOW(), ?)");
             pstmt->setString(1, sck_list[idx].user);
             pstmt->setString(2, buf);
             pstmt->execute();
