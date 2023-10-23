@@ -188,11 +188,6 @@ int chat_recv() {
     }
 }
 
-class User{
-public:
-    string id, pw, name, phone, status, birth;
-};
-
 class SQL {
 private:
     string id, pw, name, phone, status, birth;
@@ -496,16 +491,15 @@ public:
         pw.clear();
         Sleep(500);
     }
-    User getUser() {
-        User user;
-        pstmt = con->prepareStatement("SELECT id, name FROM user WHERE id = ?");
+    string getId() {
+        string userId;
+        pstmt = con->prepareStatement("SELECT id FROM user WHERE id = ?");
         pstmt->setString(1, id);
         result = pstmt->executeQuery();
         if (result->next()) {
-            user.id = result->getString(1);
-            user.name = result->getString(2);
+            userId = result->getString(1);
         }
-        return user;
+        return userId;
     } 
     void friends() {
         pstmt = con->prepareStatement("SELECT name, status, birth, phone FROM user WHERE id != ?;");
@@ -665,7 +659,7 @@ int main() {
             chattinginfo();
             bool backButton = false;
             int code = 0;
-            User user;
+            string id;
             while (!backButton) {
                 char information = 0;
                 cin >> information;
@@ -676,8 +670,7 @@ int main() {
                     code = WSAStartup(MAKEWORD(2, 2), &wsa);
                     if (!code) {
                         cout << "채팅방 입장." << endl;
-                        user = sql.getUser();
-                        
+                        id = sql.getId();
                         client_sock = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP); 
                         // 연결할 서버 정보 설정 부분
                         SOCKADDR_IN client_addr = {};
@@ -688,7 +681,7 @@ int main() {
                         while (1) {
                             if (!connect(client_sock, (SOCKADDR*)&client_addr, sizeof(client_addr))) { // 위에 설정한 정보에 해당하는 server로 연결!
                                 cout << "Server Connect" << endl;
-                                send(client_sock, user.id.c_str(), sizeof(user.id), 0); 
+                                send(client_sock,id.c_str(), sizeof(id), 0); 
                                 break;
                             }
                             cout << "Connecting..." << endl;
@@ -698,7 +691,6 @@ int main() {
 
                         while (1) {
                             string text;
-                            string user_id;
                             std::getline(cin, text);
                             const char* buffer = text.c_str(); // string형을 char* 타입으로 변환
                             send(client_sock, buffer, strlen(buffer), 0);

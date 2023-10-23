@@ -159,9 +159,11 @@ void add_client() {
     recv(new_client.sck, buf, MAX_SIZE, 0);
     // Winsock2의 recv 함수. client가 보낸 닉네임을 받음.
     id = string(buf);
+    cout << "id:" << id << endl;
     new_client.id = id;
     string name = getUser();
     new_client.name = name;
+    cout << "name:" << name << endl;
     string msg = "[공지] " + new_client.name + " 님이 입장했습니다.";
     cout << msg << endl;
     sck_list.push_back(new_client); // client 정보를 답는 sck_list 배열에 새로운 client 추가
