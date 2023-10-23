@@ -24,7 +24,8 @@ const string password = "1234"; // 데이터베이스 접속 비밀번호
 
 struct SOCKET_INFO { // 연결된 소켓 정보에 대한 틀 생성
     SOCKET sck;
-    string user;
+    string id;
+    string name;
 };
 
 
@@ -37,6 +38,21 @@ sql::Connection* con;
 sql::PreparedStatement* pstmt;
 sql::ResultSet* result;
 sql::Statement* stmt;
+
+string id;
+
+string getUser() {
+    string name = "";
+
+    pstmt = con->prepareStatement("SELECT name FROM user WHERE id = ?");
+    pstmt->setString(1, id);
+    result = pstmt->executeQuery();
+    if (result->next()) {
+        name = result->getString(1);
+    }
+    return name;
+}
+
 void startSql() {
     try {
         driver = sql::mysql::get_mysql_driver_instance();
@@ -53,7 +69,7 @@ void startSql() {
     // DB 한글 저장을 위한 셋팅                                                             
     stmt = con->createStatement();
     stmt->execute("set names euckr");
-    if (stmt) {delete stmt; stmt = nullptr;}
+    if (stmt) { delete stmt; stmt = nullptr; }
 }//SQL실행 - creatTable;
 
 void server_init(); // socket 초기화 함수. socket(), bind(), listen() 함수 실행됨. 자세한 내용은 함수 구현부에서 확인.
@@ -67,7 +83,7 @@ int main() {
     startSql();
 
     WSADATA wsa;
-
+    
     // Winsock를 초기화하는 함수. MAKEWORD(2, 2)는 Winsock의 2.2 버전을 사용하겠다는 의미.
     // 실행에 성공하면 0을, 실패하면 그 이외의 값을 반환.
     // 0을 반환했다는 것은 Winsock을 사용할 준비가 되었다는 의미.
@@ -85,10 +101,9 @@ int main() {
 
         while (1) { // 무한 반복문을 사용하여 서버가 계속해서 채팅 보낼 수 있는 상태를 만들어 줌. 반복문을 사용하지 않으면 한 번만 보낼 수 있음.
             string text, msg = "";
-
             std::getline(cin, text);
             const char* buf = text.c_str();
-            msg = server_sock.user + " : " + buf;
+            msg = server_sock.name + " : " + buf;
             send_msg(msg.c_str());
         }
         for (int i = 0; i < MAX_CLIENT; i++) {
@@ -127,7 +142,7 @@ void server_init() {
 
     bind(server_sock.sck, (sockaddr*)&server_addr, sizeof(server_addr)); // 설정된 소켓 정보를 소켓에 바인딩한다.
     listen(server_sock.sck, SOMAXCONN); // 소켓을 대기 상태로 기다린다.
-    server_sock.user = "server";
+    server_sock.name = "server";
 
     cout << "Server On" << endl;
 }
@@ -143,8 +158,11 @@ void add_client() {
     new_client.sck = accept(server_sock.sck, (sockaddr*)&addr, &addrsize);
     recv(new_client.sck, buf, MAX_SIZE, 0);
     // Winsock2의 recv 함수. client가 보낸 닉네임을 받음.
-    new_client.user = string(buf);
-    string msg = "[공지] " + new_client.user + " 님이 입장했습니다.";
+    id = string(buf);
+    new_client.id = id;
+    string name = getUser();
+    new_client.name = name;
+    string msg = "[공지] " + new_client.name + " 님이 입장했습니다.";
     cout << msg << endl;
     sck_list.push_back(new_client); // client 정보를 답는 sck_list 배열에 새로운 client 추가
 
@@ -173,16 +191,18 @@ void recv_msg(int idx) {
     while (1) {
         ZeroMemory(&buf, MAX_SIZE);
         if (recv(sck_list[idx].sck, buf, MAX_SIZE, 0) > 0) { // 오류가 발생하지 않으면 recv는 수신된 바이트 수를 반환. 0보다 크다는 것은 메시지가 왔다는 것.
-            msg = sck_list[idx].user + " : " + buf;
+            msg = sck_list[idx].name + " : " + buf;
             cout << msg << endl;
             send_msg(msg.c_str());
-            pstmt = con->prepareStatement("INSERT INTO chatting(chatname, time, message) VALUE(?, NOW(), ?)");
-            pstmt->setString(1, sck_list[idx].user);
+            
+            pstmt = con->prepareStatement("INSERT INTO chatting(chatname, time, message, user_id) VALUE(?, NOW(), ?, ?)");
+            pstmt->setString(1, sck_list[idx].name);
             pstmt->setString(2, buf);
+            pstmt->setString(3, sck_list[idx].id);
             pstmt->execute();
         }
         else { //그렇지 않을 경우 퇴장에 대한 신호로 생각하여 퇴장 메시지 전송
-            msg = "[공지] " + sck_list[idx].user + " 님이 퇴장했습니다.";
+            msg = "[공지] " + sck_list[idx].name + " 님이 퇴장했습니다.";
             cout << msg << endl;
             send_msg(msg.c_str());
             del_client(idx); // 클라이언트 삭제

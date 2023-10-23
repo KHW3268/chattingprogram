@@ -29,6 +29,7 @@ sql::Statement* stmt;
 
 SOCKET client_sock;
 string my_nick;
+string load_id;
 
 
 
@@ -187,7 +188,12 @@ int chat_recv() {
     }
 }
 
-class SQL{
+class User{
+public:
+    string id, pw, name, phone, status, birth;
+};
+
+class SQL {
 private:
     string id, pw, name, phone, status, birth;
 public:
@@ -209,7 +215,7 @@ public:
         stmt->execute("set names euckr");
         if (stmt) { delete stmt; stmt = nullptr; }
     }
-    int login(){
+    int login() {
         cout << ">>아이디 : ";
         cin >> id;
         this->id = id;
@@ -218,11 +224,10 @@ public:
         while (ch != 13) { // Enter 키를 누르면 입력 종료
             ch = _getch();
             if (ch == 13) break; // Enter 키를 누르면 입력 종료
-            else if (ch == 8) { // Backspace 키인 경우
-                if (!pw.empty()) { // 입력된 문자가 있으면
-                    pw.pop_back(); // 마지막 문자를 삭제
-                    cout << "\b \b"; // 커서 위치를 왼쪽으로 이동시켜 공백을 출력한 뒤,
-                    // 다시 커서 위치를 원래대로 이동시킴
+            else if (ch == 8) { 
+                if (!pw.empty()) { 
+                    pw.pop_back(); 
+                    cout << "\b \b"; 
                 }
             }
             else {
@@ -231,16 +236,15 @@ public:
             }
         }
         cout << endl;
-        pstmt = con->prepareStatement("SELECT id, pw, name FROM user \
-            WHERE id=?");
+        pstmt = con->prepareStatement("SELECT id, pw, name FROM user WHERE id=?");
         pstmt->setString(1, id);
         result = pstmt->executeQuery();
 
-        if (result->next()){ // 쿼리 결과가 있다면
+        if (result->next()) { // 쿼리 결과가 있다면
             string db_id = result->getString(1); // 데이터베이스에서 가져온 ID
             string db_pw = result->getString(2); // 데이터베이스에서 가져온 PW
 
-            if (db_id == id && db_pw == pw){
+            if (db_id == id && db_pw == pw) {
                 name = result->getString(3);
                 cout << endl << "▶로그인 중입니다. 잠시만 기다려주세요." << endl << endl;
 
@@ -252,12 +256,12 @@ public:
         else cout << "▶해당하는 정보가 없습니다." << endl;
         pw.clear();
     }
-    void searchId(){
+    void searchId() {
         cout << ">>이름 : ";
         cin >> name;
         cout << ">>전화번호 : ";
         cin >> phone;
-        while (true){
+        while (true) {
             cout << ">>생년월일 : ";
             cin >> birth;
             if (birth.length() != 8) {
@@ -276,17 +280,17 @@ public:
         pstmt->setString(1, phone);
         result = pstmt->executeQuery();
 
-        if (result->next()){
+        if (result->next()) {
             string db_id = result->getString(1);
             string db_name = result->getString(2);
             string db_phone = result->getString(3);
             string db_birth = result->getString(4);
 
-            if (db_name == name && db_phone == phone && db_birth == DATE){
+            if (db_name == name && db_phone == phone && db_birth == DATE) {
                 cout << "▶" << name << "님의 아이디는 " << db_id << "입니다." << endl;
                 Sleep(3000);
             }
-            else{
+            else {
                 cout << "▶해당하는 정보가 없습니다.!" << endl;
                 Sleep(500);
             }
@@ -296,14 +300,14 @@ public:
             Sleep(500);
         }
     }
-    void searchPw(){
+    void searchPw() {
         cout << ">>아이디 : ";
         cin >> id;
         cout << ">>이름 : ";
         cin >> name;
         cout << ">>전화번호 : ";
         cin >> phone;
-        while (true){
+        while (true) {
             cout << ">>생년월일 : ";
             cin >> birth;
             if (birth.length() != 8) {
@@ -322,14 +326,14 @@ public:
         pstmt->setString(1, id);
         result = pstmt->executeQuery();
 
-        if (result->next()){
+        if (result->next()) {
             string db_id = result->getString(1);
             string db_name = result->getString(2);
             string db_phone = result->getString(3);
             string db_birth = result->getString(4);
 
-            if (db_id == id && db_name == name && db_phone == phone && db_birth == DATE){
-                while (1){
+            if (db_id == id && db_name == name && db_phone == phone && db_birth == DATE) {
+                while (1) {
                     string new_pw = "";
                     cout << ">>새로운 비밀번호를 입력해주세요 : ";
                     char ch = ' ';
@@ -370,7 +374,7 @@ public:
                     }
                     cout << endl;
 
-                    if (new_pw == renew_pw){
+                    if (new_pw == renew_pw) {
                         pstmt = con->prepareStatement("UPDATE user SET pw = ? WHERE id = ?");
                         pstmt->setString(1, new_pw);
                         pstmt->setString(2, id);
@@ -395,15 +399,15 @@ public:
             Sleep(500);
         }
     }
-    void createUser(){
-        while (1){
+    void createUser() {
+        while (1) {
             cout << ">>아이디 : ";
             cin >> id;
             pstmt = con->prepareStatement("SELECT id FROM user WHERE id=?");
             pstmt->setString(1, id);
             result = pstmt->executeQuery();
 
-            if (result->next()){
+            if (result->next()) {
                 string db_id = result->getString(1);
                 if (db_id == id) {
                     cout << "▶중복된 아이디가 있습니다." << endl;
@@ -415,16 +419,16 @@ public:
                 break;
             }
         }
-        while (1){
+        while (1) {
             cout << ">>비밀번호를 입력해주세요 : ";
             char ch = ' ';
-            while (ch != 13) { // Enter 키를 누르면 입력 종료
+            while (ch != 13) { 
                 ch = _getch();
-                if (ch == 13) break; // Enter 키를 누르면 입력 종료
-                if (ch == 8) { // Backspace 키인 경우
-                    if (!pw.empty()) { // 입력된 문자가 있으면
-                        pw.pop_back(); // 마지막 문자를 삭제
-                        cout << "\b \b"; // 커서 위치를 왼쪽으로 이동시켜 공백을 출력한 뒤, 다시 커서 위치를 원래대로 이동시킴
+                if (ch == 13) break; 
+                if (ch == 8) { 
+                    if (!pw.empty()) { 
+                        pw.pop_back(); 
+                        cout << "\b \b";
                     }
                 }
                 else {
@@ -436,7 +440,7 @@ public:
             string new_pw = "";
             cout << endl << ">>다시 한번 입력해주세요. : ";
             char rech = ' ';
-            while (rech != 13) { // Enter 키를 누르면 입력 종료
+            while (rech != 13) { 
                 rech = _getch();
                 if (rech == 13) break; // Enter 키를 누르면 입력 종료
                 else if (rech == 8) { // Backspace 키인 경우
@@ -453,10 +457,10 @@ public:
             }
             cout << endl;
 
-            if (pw == new_pw){
+            if (pw == new_pw) {
                 break;
             }
-            else{
+            else {
                 cout << "비밀번호가 다릅니다." << endl;
                 pw.clear();
             }
@@ -466,7 +470,7 @@ public:
         cin >> name;
         cout << ">>전화번호 : ";
         cin >> phone;
-        while (true){
+        while (true) {
             cout << ">>생년월일 : ";
             cin >> birth;
             if (birth.length() != 8) {
@@ -492,34 +496,26 @@ public:
         pw.clear();
         Sleep(500);
     }
-    void beforeChat()
-    {
-        
-    }
-    string getName(){
-        string getName = "";
-        pstmt = con->prepareStatement("SELECT name FROM user WHERE id=?");
+    User getUser() {
+        User user;
+        pstmt = con->prepareStatement("SELECT id, name FROM user WHERE id = ?");
         pstmt->setString(1, id);
         result = pstmt->executeQuery();
-        if (result->next()){
-            getName = result->getString(1);
+        if (result->next()) {
+            user.id = result->getString(1);
+            user.name = result->getString(2);
         }
-        return getName;
-    }
-    void chattingInfo() {
-        pstmt = con->prepareStatement("INSERT INTO chatting(user_id) VALUE(?)");
-        pstmt->setString(1, id);
-        pstmt->execute();
-    }
-    void friends(){
+        return user;
+    } 
+    void friends() {
         pstmt = con->prepareStatement("SELECT name, status, birth, phone FROM user WHERE id != ?;");
         pstmt->setString(1, id);
         result = pstmt->executeQuery();
 
-        while (result->next()){
+        while (result->next()) {
             cout << "-----------------------------" << endl;
             cout << "이름 : " << result->getString("name") << endl;
-            if (result->getString("status") == ""){
+            if (result->getString("status") == "") {
                 cout << "상태메세지 : 없음" << endl;
             }
             else {
@@ -540,14 +536,14 @@ public:
         pstmt->executeQuery();
         printf("▶업데이트 되었습니다.\n");
     }
-    void myProfile(){
+    void myProfile() {
         pstmt = con->prepareStatement("SELECT name, status, birth, phone FROM user WHERE id = ?;");
         pstmt->setString(1, id);
         result = pstmt->executeQuery();
-        while (result->next()){
+        while (result->next()) {
             cout << "-----------------------------------------" << endl;
             cout << "이름 : " << result->getString("name") << endl;
-            if (result->getString("status") == ""){
+            if (result->getString("status") == "") {
                 cout << "상태메세지 : 없음" << endl;
             }
             else {
@@ -558,13 +554,11 @@ public:
             cout << "-----------------------------------------" << endl;
         }
     }
-    void search_content_message()
-    {
+    void search_content_message(){
         string content;
-        cout << ">>내용에 따른 메시지 검색 : ";
+        cout << ">>내용 검색 : ";
         cin >> content;
-        pstmt = con->prepareStatement("SELECT chatname, time, message FROM chatting\
-                               WHERE message LIKE ?");
+        pstmt = con->prepareStatement("SELECT chatname, time, message FROM chatting WHERE message LIKE ?");
         pstmt->setString(1, "%" + content + "%");
         result = pstmt->executeQuery();
 
@@ -576,7 +570,7 @@ public:
                 string chatname = result->getString(1);
                 string time = result->getString(2);
                 string message = result->getString(3);
-                cout << "--------------------------------------------------" << endl;
+                cout << "::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::" << endl;
                 cout << "보낸사람 : " << chatname << " 보낸시간 : " << time << endl;
                 cout << "내역 : " << message << endl;
                 if (!result->next()) break;
@@ -617,7 +611,7 @@ int main() {
         case '0': //0. 시스템 종료
             return -1;
         default: //5 ~ 9. 재입력
-            cout << "▶잘못된 입력입니다. 다시 입력해주세요." << endl;
+            cout << "잘못된 입력입니다. 다시 입력해주세요." << endl;
             continue;
         }
 
@@ -671,18 +665,20 @@ int main() {
             chattinginfo();
             bool backButton = false;
             int code = 0;
+            User user;
             while (!backButton) {
                 char information = 0;
                 cin >> information;
                 switch (information) {
                 case '1':
+                    chattingmain();
                     WSADATA wsa;
                     code = WSAStartup(MAKEWORD(2, 2), &wsa);
                     if (!code) {
                         cout << "채팅방 입장." << endl;
-                        my_nick = sql.getName();
-                        client_sock = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP); // 
-
+                        user = sql.getUser();
+                        
+                        client_sock = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP); 
                         // 연결할 서버 정보 설정 부분
                         SOCKADDR_IN client_addr = {};
                         client_addr.sin_family = AF_INET;
@@ -692,7 +688,7 @@ int main() {
                         while (1) {
                             if (!connect(client_sock, (SOCKADDR*)&client_addr, sizeof(client_addr))) { // 위에 설정한 정보에 해당하는 server로 연결!
                                 cout << "Server Connect" << endl;
-                                send(client_sock, my_nick.c_str(), my_nick.length(), 0); // 연결에 성공하면 client 가 입력한 닉네임을 서버로 전송
+                                send(client_sock, user.id.c_str(), sizeof(user.id), 0); 
                                 break;
                             }
                             cout << "Connecting..." << endl;
@@ -702,13 +698,18 @@ int main() {
 
                         while (1) {
                             string text;
+                            string user_id;
                             std::getline(cin, text);
-                            sql.chattingInfo();
                             const char* buffer = text.c_str(); // string형을 char* 타입으로 변환
                             send(client_sock, buffer, strlen(buffer), 0);
+                            if (text == "/종료") {
+                                closesocket(client_sock);
+                                backButton = true;
+                                break;
+                            }
                         }
                         th2.join();
-                        closesocket(client_sock);
+                        
                     }
                     WSACleanup();
                     break;
@@ -729,6 +730,7 @@ int main() {
             cout << "프로그램을 종료합니다." << endl;
             return 0;
         }
+        else cout << "잘못된 입력입니다. 다시 입력해주세요." << endl;
     }
     return 0;
 }
