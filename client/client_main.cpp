@@ -29,7 +29,6 @@ sql::Statement* stmt;
 
 SOCKET client_sock;
 string my_nick;
-string load_id;
 
 
 
